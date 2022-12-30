@@ -1,60 +1,36 @@
 import {makeObservable, observable, action} from 'mobx';
 import {computed} from 'mobx';
-import {createContext, useContext} from "react"
-import React from 'react';
+import React, { createContext } from 'react';
+import { UserStore } from "./account";
+import { ContactStore } from './contact';
+import { SessionStore } from './session';
+import { SocketStore } from './socket';
+import { ThemeStore } from './theme';
 
-export const StoreContext = createContext<TodoList|null>(null);
+export interface IStoreContext {
+  userStore: UserStore;
+  contactStore: ContactStore;
+  sessionStore: SessionStore;
+  socketStore: SocketStore;
+  themeStore: ThemeStore;
+}
 
-class Todo {
-  id = Math.random();
-  title = '';
-  finished = false;
+export class RootStore {
+  userStore: UserStore;
+  contactStore: ContactStore;
+  sessionStore: SessionStore;
+  socketStore: SocketStore;
+  themeStore: ThemeStore;
 
-  constructor(title: string) {
-    makeObservable(this, {
-      title: observable,
-      finished: observable,
-      toggle: action,
-    });
-    this.title = title;
-  }
-
-  toggle() {
-    this.finished = !this.finished;
+  constructor () {
+    this.userStore = new UserStore(this);
+    this.contactStore = new ContactStore(this);
+    this.sessionStore = new SessionStore(this);
+    this.socketStore = new SocketStore(this);
+    this.themeStore = new ThemeStore();
   }
 }
 
-class TodoList {
-  todos: Todo[] = [];
-
-  get unfinishedTodoCount() {
-    return this.todos.filter(todo => !todo.finished).length;
-  }
-
-  constructor(todos) {
-    makeObservable(this, {
-      todos: observable,
-      unfinishedTodoCount: computed,
-      addItem: action,
-      removeItem: action
-    });
-    this.todos = todos;
-  }
-
-  addItem () {
-    this.todos.push(new Todo(new Date().toString().substring(0, 24)))
-  }
-
-  removeItem(index: number) {
-    this.todos.splice(index, 1)
-  }
-}
-
-export const rootStore = new TodoList([
-  new Todo('Get Coffee'),
-  new Todo('Write simpler code'),
-]);
-
-export const useStore = () => {
-  return React.useContext(StoreContext)
-}
+export const rootStore = new RootStore();
+export const StoreContext = createContext<IStoreContext>(rootStore);
+export const useStore = () =>  React.useContext(StoreContext)

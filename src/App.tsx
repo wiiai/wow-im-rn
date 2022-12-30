@@ -1,95 +1,73 @@
 import * as React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {
-  IconContactO,
-  IconHome,
-  IconHomeO,
-  IconPeople,
-  IconPeopleO,
-} from './assets/iconfont';
-import {MainTabBar} from './navigator/MainTabBar';
-import IconContact from './assets/iconfont/IconContact';
-import {HomeScreen} from './pages/home';
-import {ContactScreen} from './pages/contact';
-import {MeScreen} from './pages/me';
 import {rootStore, StoreContext} from './models';
+import Navigator from './navigator';
+import {extendTheme, NativeBaseProvider} from 'native-base';
+import {loadLocalUInfo} from './utils/auth';
+import {View, Text} from 'react-native';
+import Login from './pages/login';
+import {observer} from 'mobx-react-lite';
 
-const Tab = createBottomTabNavigator();
+const Main = observer(() => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  React.useEffect(() => {
+    onBeforeBootstrap().then(() => {
+      setIsLoaded(true);
+    });
+  }, [rootStore.userStore.isLogin]);
+
+  // 在应用主框架启动要干的事情
+  const onBeforeBootstrap = async () => {
+    // 离线存储数据加载到内存中
+    const uInfo = await loadLocalUInfo();
+
+    // 检查登录态
+    await rootStore.userStore.checkLogin();
+
+    // store 初始化
+    if (uInfo) {
+      rootStore.userStore.initData({ userInfo: uInfo })
+    }
+
+    // 如果是登录状态, 创建 socket 连接
+    if (rootStore.userStore.isLogin) {
+      rootStore.socketStore.initSocket();
+      await rootStore.sessionStore.fetchList();
+    } else {
+      rootStore.socketStore.doDisConnect();
+    }
+  };
+
+  if (!isLoaded) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <Text>加载中...</Text>
+      </View>
+    );
+  }
+
+  // 未登录渲染登录页面
+  if (!rootStore.userStore.isLogin) {
+    return <Login />;
+  }
+
+  return <Navigator />;
+});
 
 export default function App() {
-  return (
-    <StoreContext.Provider value={rootStore}>
-      <NavigationContainer>
-        <Tab.Navigator
-          tabBar={props => <MainTabBar {...props} />}
-          screenOptions={{
-            tabBarActiveTintColor: '#0025ff',
-          }}>
-          <Tab.Screen
-            name="Home"
-            options={{
-              headerShown: false,
-              title: '消息',
-              tabBarIcon: ({
-                focused,
-                color,
-              }: {
-                focused: boolean;
-                color: string;
-              }) => {
-                return focused ? (
-                  <IconHome color={color} />
-                ) : (
-                  <IconHomeO color={color} />
-                );
-              },
-            }}
-            component={HomeScreen}
-          />
-          <Tab.Screen
-            name="Contact"
-            options={{
-              title: '朋友',
-              tabBarIcon: ({
-                focused,
-                color,
-              }: {
-                focused: boolean;
-                color: string;
-              }) => {
-                return focused ? (
-                  <IconContact color={color} />
-                ) : (
-                  <IconContactO color={color} />
-                );
-              },
-            }}
-            component={ContactScreen}
-          />
-          <Tab.Screen
-            name="Settings"
-            options={{
-              title: '我的',
+  const theme = extendTheme({
+    colors: {
+      primary: {
+        900: '#1c1917',
+      },
+    },
+  });
 
-              tabBarIcon: ({
-                focused,
-                color,
-              }: {
-                focused: boolean;
-                color: string;
-              }) => {
-                return focused ? (
-                  <IconPeople color={color} />
-                ) : (
-                  <IconPeopleO color={color} />
-                );
-              },
-            }}
-            component={MeScreen}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
-    </StoreContext.Provider>
+  return (
+    <NativeBaseProvider theme={theme}>
+      <StoreContext.Provider value={rootStore}>
+        <Main />
+      </StoreContext.Provider>
+    </NativeBaseProvider>
   );
 }

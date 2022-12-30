@@ -2,9 +2,9 @@ import axios, {AxiosRequestConfig} from 'axios';
 import {getToken} from '@/utils/auth';
 import {baseURL} from './index';
 
-const instance = axios.create();
+export const http = axios.create();
 
-instance.interceptors.request.use(
+http.interceptors.request.use(
   function (config) {
     const headers: any = {
       ...(config.headers || {}),
@@ -20,7 +20,7 @@ instance.interceptors.request.use(
   },
 );
 
-instance.interceptors.response.use(
+http.interceptors.response.use(
   function (response) {
     return response.data;
   },
@@ -37,7 +37,7 @@ function sleep() {
 }
 
 async function request<T>(options: AxiosRequestConfig): Promise<T> {
-  const p1 = instance({
+  const p1 = http({
     ...options,
     url: baseURL + options.url,
     method: options.method || 'POST',
