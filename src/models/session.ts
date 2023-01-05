@@ -24,7 +24,9 @@ export class SessionStore {
   unReadInfo: Record<string, number> = {};
 
   get sessions () {
-    return this.list.map((it) => {
+    return this.list.slice().sort((a, b) => {
+      return -(a.last_message.time || 0) + (b.last_message.time || 0)
+    }).map((it) => {
       const unread = this.unReadInfo[it.partner_id];
       return {
         ...it,
