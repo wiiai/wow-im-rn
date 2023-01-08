@@ -6,6 +6,7 @@ import {
   Platform,
   ViewStyle,
   ViewProps,
+  Keyboard,
 } from 'react-native';
 import BText from '../BText';
 import IconIosArrowRoundBack from '../icon/IconIosArrowRoundBack';
@@ -59,7 +60,12 @@ const BNavBar: React.FC<IBNavBar> = ({
       if (showBack) {
         return (
           <TouchableHighlight
-            onPress={() => onClickBack?.()}
+            onPress={() => {
+              if (onClickBack) {
+                Keyboard.dismiss();
+                onClickBack();
+              }
+            }}
             underlayColor="#ddd"
             style={{width: 30}}>
             <IconIosArrowRoundBack size={30} color="#333" {...backIconStyle} />
